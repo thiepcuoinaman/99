@@ -579,7 +579,7 @@ end)
 -- ⚔️ V8 ASYNC FAST FARM (NO-SORT + STATIC PETS)
 -- ==========================================
 local lastFarmTick = 0
-local FARM_DELAY = 0.1 
+local FARM_DELAY = 0.2 
 
 table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     if not vm:Get("IsReadyToFarm") then return end
@@ -595,9 +595,9 @@ table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     local targets = {}
     for _, b in ipairs(BreakablesFolder:GetChildren()) do
         if b:IsA("Model") and b.PrimaryPart then
-            if (b.PrimaryPart.Position - rootPos).Magnitude < 150 then
+            if (b.PrimaryPart.Position - rootPos).Magnitude < 130 then
                 table.insert(targets, b.Name)
-                if #targets >= 60 then break end
+                if #targets >= 50 then break end
             end
         end
     end
@@ -605,7 +605,7 @@ table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     local numTargets = #targets
     if numTargets > 0 then
         -- Giảm Aura xuống 10 mục tiêu để không nghẽn mạng
-        local auraLimit = math.min(numTargets, 30)
+        local auraLimit = math.min(numTargets, 10)
         for i = 1, auraLimit do
             Network.UnreliableFire("Breakables_PlayerDealDamage", targets[i])
         end
@@ -835,7 +835,8 @@ task.spawn(function()
             if not isCooldown and (q.target - q.progress > 0) then
                 if q.name == "BEST_GOLD_PET" or q.name == "BEST_RAINBOW_PET" or q.name == "USE_FLAG" 
                 or q.name == "BEST_COMET" or q.name == "BEST_PINATA" or q.name == "BEST_COIN_JAR" or q.name == "BEST_LUCKYBLOCK"
-                or q.name == "COMET" or q.name == "PINATA" or q.name == "COIN_JAR" or q.name == "LUCKYBLOCK" then
+                or q.name == "COMET" or q.name == "PINATA" or q.name == "COIN_JAR" or q.name == "LUCKYBLOCK" 
+                or q.name == "HATCH_RARE_PET" then 
                     isPetQuestActive = true
                     break
                 end
@@ -1088,51 +1089,40 @@ task.spawn(function()
                 if quest.name == "BEST_EGG" or quest.name == "HATCH_RARE_PET" or quest.name == "EGG" then
                     if not actionTakenThisLoop then
                         local lastTime = vm:Get("ActionTime_" .. quest.goalId) or 0
-                        
                         if os.clock() - lastTime > 2.5 then 
                             vm:Set("ActionTime_" .. quest.goalId, os.clock())
                             UpdateStatus(string.format("In the Auto-Hatch Eggs mode.(%s/%s)...", FormatValue(quest.progress), FormatValue(quest.target)), "LOG_EGG_" .. quest.goalId)
-                            
                             actionTakenThisLoop = true 
                             currentActiveQuestName = quest.name
-                            
                             task.spawn(function()
                                 ToggleEggAnimation()
                                 
-                                -- Logic riêng cho nhiệm vụ HATCH_RARE_PET
+                                -- LOGIC DỊCH CHUYỂN VÀ ẤP TRỨNG RARE
                                 if quest.name == "HATCH_RARE_PET" then
-                                    local success, maxAvailableEgg = pcall(function() 
-                                        return ZoneCmds.GetMaximumOverallZone().MaximumAvailableEgg 
-                                    end)
-                                    
-                                    if success and type(maxAvailableEgg) == "number" then
-                                        -- Tự động quét dữ liệu game để lấy chính xác số thứ tự của Duskwillow Egg
-                                        local targetEggNumber = math.huge
-                                        for _, egg in pairs(DirectoryEggs) do
-                                            if egg._id == "Duskwillow Egg" and type(egg.eggNumber) == "number" then
-                                                targetEggNumber = egg.eggNumber
-                                                break
-                                            end
+                                    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                    if hrp then
+                                        -- Tọa độ quả trứng Duskwillow
+                                        local targetCFrame = CFrame.new(-14574.61, 16.24, 2184.81)
+                                        
+                                        -- Nếu nhân vật đứng cách xa hơn 15 studs, lập tức dịch chuyển
+                                        if (hrp.Position - targetCFrame.Position).Magnitude > 15 then
+                                            hrp.CFrame = targetCFrame
+                                            task.wait(0.5) -- Nghỉ nửa giây để server kịp load vị trí mới
                                         end
                                         
-                                        -- Nếu số trứng tối đa của bạn lớn hơn hoặc bằng số thứ tự của Duskwillow Egg
-                                        if maxAvailableEgg >= targetEggNumber then
-                                            Network.Invoke('Eggs_RequestPurchase', 'Duskwillow Egg', EggCmds.GetMaxHatch())
-                                            return -- Hoàn thành lệnh và thoát
-                                        end
+                                        -- Gửi lệnh ấp
+                                        Network.Invoke('Eggs_RequestPurchase', 'Duskwillow Egg', EggCmds.GetMaxHatch())
+                                        return -- Thoát để không chạy lệnh HatchBestEgg bên dưới
                                     end
                                 end
                                 
-                                -- Fallback cho nhiệm vụ EGG, BEST_EGG hoặc khi chưa mở khoá Duskwillow Egg
                                 HatchBestEgg()
                             end)
                         else
                             if not waitingQuestLogText then
                                 waitingQuestLogText = string.format("Incubating eggs (%s/%s)...", FormatValue(quest.progress), FormatValue(quest.target))
                                 waitingQuestLogId = "LOG_EGG_" .. quest.goalId
-                                if not currentActiveQuestName then 
-                                    currentActiveQuestName = quest.name 
-                                end
+                                if not currentActiveQuestName then currentActiveQuestName = quest.name end
                             end
                         end
                     end

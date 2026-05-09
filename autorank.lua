@@ -562,16 +562,19 @@ task.spawn(function()
                     vm:Set("IsReadyToFarm", false); hrp.CFrame = targetPart.CFrame + Vector3.new(0, 2, 0); task.wait(0.5); vm:Set("TargetZoneId", maxZoneId); vm:Set("OutZoneTime", 0)
                 else
                     if dist > 45 then
-                        if vm:Get("IsPetQuestActive") then vm:Set("OutZoneTime", 0); vm:Set("IsReadyToFarm", false)
+                        if vm:Get("IsPetQuestActive") then 
+                            vm:Set("IsReadyToFarm", true) 
+                            vm:Set("OutZoneTime", os.clock() - 5) 
                         else
                             local outTime = vm:Get("OutZoneTime")
                             if outTime == 0 then vm:Set("OutZoneTime", os.clock())
-                            elseif os.clock() - outTime >= 5 then vm:Set("IsReadyToFarm", false); hrp.CFrame = targetPart.CFrame + Vector3.new(0, 2, 0); task.wait(0.5); vm:Set("OutZoneTime", 0) end
+                            elseif os.clock() - outTime >= 5 then 
+                                vm:Set("IsReadyToFarm", false); hrp.CFrame = targetPart.CFrame + Vector3.new(0, 2, 0); task.wait(0.5); vm:Set("OutZoneTime", 0) 
+                            end
                         end
                     else vm:Set("OutZoneTime", 0); vm:Set("IsReadyToFarm", true); vm:Set("current_zone", maxZoneId) end
                 end
             else vm:Set("IsReadyToFarm", false) end
-        else vm:Set("IsReadyToFarm", false) end
     end
 end)
 
@@ -579,7 +582,7 @@ end)
 -- ⚔️ V8 ASYNC FAST FARM (NO-SORT + STATIC PETS)
 -- ==========================================
 local lastFarmTick = 0
-local FARM_DELAY = 0.08 
+local FARM_DELAY = 0.2 
 
 table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     if not vm:Get("IsReadyToFarm") then return end
@@ -597,7 +600,7 @@ table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
         if b:IsA("Model") and b.PrimaryPart then
             if (b.PrimaryPart.Position - rootPos).Magnitude < 130 then
                 table.insert(targets, b.Name)
-                if #targets >= 60 then break end
+                if #targets >= 50 then break end
             end
         end
     end
@@ -605,7 +608,7 @@ table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     local numTargets = #targets
     if numTargets > 0 then
         -- Giảm Aura xuống 10 mục tiêu để không nghẽn mạng
-        local auraLimit = math.min(numTargets, 30)
+        local auraLimit = math.min(numTargets, 10)
         for i = 1, auraLimit do
             Network.UnreliableFire("Breakables_PlayerDealDamage", targets[i])
         end

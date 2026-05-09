@@ -9,14 +9,14 @@ _G.RNGEventStarted = true
 -- 1. CẤU HÌNH NGOẠI VI (GETGENV)
 -- ==========================================
 local config = getgenv().RNGConfig or {
-    WebhookURL = "",               -- Dành riêng cho thông báo ấp ra Huge/Titanic (Để trống sẽ bỏ qua)
-    PingID = "",                   -- ID Discord để ping khi ra Huge/Titanic
-    Blackout = true,               -- Bật/Tắt màn hình đen tối ưu FPS
-    AutoTrade = true,              -- Bật/Tắt Auto Trade (Load từ Github)
-    AutoUpgrade = true,            -- Tự động mua các nâng cấp sự kiện RNG
-    AutoMerchant = true,           -- Bật/Tắt Tự động vét cửa hàng xúc xắc
-    TargetMerchant = "RegularMerchant",-- TÊN MERCHANT (Cần sửa lại sau khi quét tối nay)
-    EventInstanceID = ""   -- TÊN MAP SỰ KIỆN (Cần sửa lại sau khi quét tối nay)
+    WebhookURL = "",  
+    PingID = "",                   
+    Blackout = true,               
+    AutoTrade = true,             
+    AutoUpgrade = true,           
+    AutoMerchant = true,           
+    TargetMerchant = "RngMerchant",
+    EventInstanceID = "rngevent"  
 }
 
 -- ==========================================
@@ -360,9 +360,13 @@ ScreenGui.Name = "RNGCrawlerHUD"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 9999 -- Đẩy UI lên lớp cao nhất để đè các UI khác của game
 
+-- Lớp nền full màn hình mờ (Ép giãn cực đại để che lấp viền và tai thỏ)
 local FullscreenBG = Instance.new("Frame", ScreenGui)
-FullscreenBG.Size = UDim2.new(1, 0, 1, 0)
+FullscreenBG.Size = UDim2.new(2, 0, 2, 0) -- Phóng to gấp đôi kích thước màn hình
+FullscreenBG.Position = UDim2.new(0.5, 0, 0.5, 0)
+FullscreenBG.AnchorPoint = Vector2.new(0.5, 0.5)
 FullscreenBG.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 FullscreenBG.BackgroundTransparency = 0.5 
 FullscreenBG.BorderSizePixel = 0

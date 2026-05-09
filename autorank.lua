@@ -579,7 +579,7 @@ end)
 -- ⚔️ V8 ASYNC FAST FARM (NO-SORT + STATIC PETS)
 -- ==========================================
 local lastFarmTick = 0
-local FARM_DELAY = 0.2 
+local FARM_DELAY = 0.1 
 
 table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     if not vm:Get("IsReadyToFarm") then return end
@@ -595,9 +595,9 @@ table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     local targets = {}
     for _, b in ipairs(BreakablesFolder:GetChildren()) do
         if b:IsA("Model") and b.PrimaryPart then
-            if (b.PrimaryPart.Position - rootPos).Magnitude < 130 then
+            if (b.PrimaryPart.Position - rootPos).Magnitude < 150 then
                 table.insert(targets, b.Name)
-                if #targets >= 50 then break end
+                if #targets >= 60 then break end
             end
         end
     end
@@ -605,7 +605,7 @@ table.insert(_G.AutoRankConnections, RunService.Heartbeat:Connect(function()
     local numTargets = #targets
     if numTargets > 0 then
         -- Giảm Aura xuống 10 mục tiêu để không nghẽn mạng
-        local auraLimit = math.min(numTargets, 10)
+        local auraLimit = math.min(numTargets, 30)
         for i = 1, auraLimit do
             Network.UnreliableFire("Breakables_PlayerDealDamage", targets[i])
         end

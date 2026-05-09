@@ -706,7 +706,17 @@ task.spawn(function()
         end)
     end
 end)
-
+task.spawn(function()
+    while task.wait(5) do
+        pcall(function()
+            local currentEggSlots = (GetCachedSave() and GetCachedSave()["EggSlotsPurchased"]) or 0
+            -- Kiểm tra và mua giới hạn Egg Slots theo Rank hiện tại
+            if currentEggSlots < RankCmds.GetMaxPurchasableEggSlots() then 
+                Network.Invoke("EggSlotsMachine_RequestPurchase", currentEggSlots + 1) 
+            end
+        end)
+    end
+end)
 task.spawn(function()
     while task.wait(1.5) do
         pcall(function()
